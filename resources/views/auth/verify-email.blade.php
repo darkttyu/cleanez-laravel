@@ -1,37 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Verify Your Email</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #ebf8ff; font-family: Arial, sans-serif;">
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="text-align: center;">
+    <img src="https://drive.google.com/uc?id=19glRWOZo-_BIDAAgFyZ1YeDHoiJy9mhr" alt="Header Image" style="max-width: 100%; height: auto;">
+  </div>
+  <div style="background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <div style="text-align: center;">
+        <span style="font-size: large; font-weight: bold; color: #20063B;">VERIFY YOUR EMAIL 📩</span>
+    </div>
+    <p>Hello, <span style="font-weight: bold; color: #4CAF50;">{{ $name }}!</span></p>
+    <p>Thank you for signing up! Click on the link below to get verified.</p>
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ $verificationURL }}"
+           style="display: inline-block;
+                  background-color: #4CAF50;
+                  color: white;
+                  font-size: 18px;
+                  font-weight: bold;
+                  padding: 14px 28px;
+                  border-radius: 8px;
+                  text-decoration: none;
+                  transition: background-color 0.3s ease, transform 0.2s;">
+            Verify My Email
+        </a>
+    </div>
 
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-        <tr>
-            <td align="center" style="padding: 40px 0;">
-                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                    <tr>
-                        <td style="padding: 40px; text-align: center;">
-                            <h1 style="font-size: 24px; font-weight: bold; color: #2d3748; margin: 0 0 16px;">Verify Your Email Address</h1>
-                            <p style="color: #4a5568; font-size: 16px; margin: 0 0 24px;">
-                                Click the button below to verify your email and activate your account.
-                            </p>
-
-                            <!-- Replace with actual verification link -->
-                            <a href="{{ $verificationUrl ?? url('/email/verify') }}" 
-                               style="display: inline-block; padding: 12px 24px; background-color: #3182ce; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 16px;">
-                                Verify Email
-                            </a>
-
-                            <p style="color: #718096; font-size: 14px; margin-top: 30px;">
-                                If you didn’t create an account, no further action is required.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
+    <br>If you didn't create an account with us, please ignore this email.</p>
+    <p>Best regards,<br><span style="font-weight: bold; color: #4CAF50;">CleanEZ Team</span></p>
+  </div>
+  <div style="text-align: center; margin-top: 10px;">
+    <img src="https://drive.google.com/uc?id=1xotvLl_V7k0oQi6B5b9RFE8g4_PIhExX" alt="Header Image" style="max-width: 100%; height: auto;">
+  </div>
+  <div style="text-align: center; margin-top: 20px; color: #888; font-size: 0.8em;">
+    <p>This is an automated message, please do not reply to this email.</p>
+  </div>
 </body>
 </html>

@@ -16,9 +16,11 @@ class VerificationEmail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(private string $name)
+    public function __construct(private string $name, private string $verificationURL, private string $token)
     {
-        //
+        $this->name = $name;
+        $this->verificationURL = $verificationURL;
+        $this->token = $token;
     }
 
     /**
@@ -27,7 +29,7 @@ class VerificationEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Verification Email',
+            subject: 'Verification Email'
         );
     }
 
@@ -38,7 +40,11 @@ class VerificationEmail extends Mailable
     {
         return new Content(
             view: 'auth.verify-email',
-            with: ['name' => $this->name]
+            with: [
+                'name' => $this->name,
+                'verificationURL' => $this->verificationURL,
+                'token' => $this->token
+            ]
         );
     }
 

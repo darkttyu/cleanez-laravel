@@ -1,32 +1,29 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Mail\VerificationEmail;
 
+use App\Models\User;
+
+use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
-use Illuminate\Http\Request;
-use App\Models\User;
+
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Carbon;
+
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
-    // public function index() {
-
-    // }
-
-    public function showSignUpForm() {
-        return view("auth.signup");
-    }
-
-    public function showLoginForm() {
-        return view("auth.login");
-    }
-
     /**
      * User Authentication Main Methods
      */
     public function signup(SignupRequest $request) {
-        $validated = $request->validated(); 
+        $validated = $request->validated();
 
         $user = User::create([
             'first_name' => $validated['first_name'],
@@ -35,8 +32,8 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'date_of_birth' => $validated['date_of_birth'],
             'phone' => $validated['phone'],
-            'gender' => $validated['gender'],   
-            'address' => [ 
+            'gender' => $validated['gender'],
+            'address' => [
                 'province' => $validated['address']['province'],
                 'municipal' => $validated['address']['municipal'],
                 'barangay' => $validated['address']['barangay'],
@@ -44,16 +41,58 @@ class AuthController extends Controller
             ]
         ]);
 
-        $user->sendEmailVerificationNotification();
-        
-        return response()->json([
-            'message' => 'User Created Successfully!',
-            'user' => $user->makehidden(['password', 'remember_token']),
-        ], 200);
+        $token = $user->createToken('email-verification')->plainTextToken;
+
+        $verificationURL = URL::temporarySignedRoute(
+            'verification.verify',
+            Carbon::now()->addMinutes(60),
+            [
+                'id' => $user->id,
+                'hash' => sha1($user->email),
+                'token' => $token
+            ]
+        );
+
+            Mail::to($user->email)->send(new VerificationEmail($user->first_name, $verificationURL, $token));
+
+            return response()->json([
+                'message' => 'User Created Successfully!',
+                'user' => $user->makehidden(['password', 'remember_token']),
+                'redirect' => 'email/verify'
+            ], 200);
     }
 
-    public function verifyEmail(Request $request) {
+    public function verify(Request $request) {
+        $user = User::findOrFail($request->id);
 
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Invalid or expired verification link.');
+        }
+
+        $tokenParts = explode('|', $request->token);
+        if (count($tokenParts) !== 2) {
+            abort(403, 'Invalid token format.');
+        }
+
+        $tokenRecord = PersonalAccessToken::find($tokenParts[0]);
+
+        if (!$tokenRecord || ! hash_equals($tokenRecord->token, hash('sha256', $tokenParts[1]))) {
+            abort(403, 'Invalid or expired token.');
+        }
+
+        if (!Auth::check()) {
+            Auth::login($user);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            $user->is_verified = true;
+            $user->save();
+
+            $tokenRecord->delete();
+        }
+
+        return redirect()->route('email-verified')->with('message', 'Email Verified Successfully!');
     }
 
     public function login(LoginRequest $request) {
@@ -69,7 +108,7 @@ class AuthController extends Controller
             }
 
             // Deletes previous tokens.
-            $user->tokens()->delete(); 
+            $user->tokens()->delete();
 
             $token = $user->createToken('auth_token', ['*'], now()->addMinutes(60))->plainTextToken;
             $user->last_login_at = now();
@@ -78,12 +117,12 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Login Successful!',
-                'access_token' => $token, 
+                'access_token' => $token,
                 'token_type' => 'Bearer'], 200);
     }
 
     public function logout(Request $request) {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->tokens()->delete();
 
         return response()->json(['message' => 'Logged Out Successfully!'], 200);
     }

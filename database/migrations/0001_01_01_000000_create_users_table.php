@@ -23,8 +23,8 @@ return new class extends Migration
             $table->enum('gender', ['Male', 'Female', 'Other']);
             $table->json('address');
             $table->enum('role', ['Admin', 'User', 'Applicant', 'Cleaner'])->default('User');
-            $table->boolean('is_active')->default(false);
             $table->boolean('is_verified')->default(false);
+            $table->boolean('is_active')->default(true);
             $table->integer('cancelled_appointments')->default(0);
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
