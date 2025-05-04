@@ -1,28 +1,30 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Mail\VerificationEmail;
 
+use App\Services\EmailVerificationService;
+use App\Services\AuthService;
 use App\Models\User;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
+use App\Http\Requests\EmailVerificationRequest;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Carbon;
-
-use Laravel\Sanctum\PersonalAccessToken;
+use App\Mail\VerificationEmail;
 
 class AuthController extends Controller
 {
+    // public function index() {
+
+    // }
+
     /**
      * User Authentication Main Methods
      */
-    public function signup(SignupRequest $request) {
+    public function signup(SignupRequest $request, EmailVerificationService $emailVerificationService) {
         $validated = $request->validated();
 
         $user = User::create([
@@ -41,84 +43,47 @@ class AuthController extends Controller
             ]
         ]);
 
-        $token = $user->createToken('email-verification')->plainTextToken;
+        $verificationURL = $emailVerificationService->generateVerificationURL($user);
+        Mail::to($user->email)->send(new VerificationEmail($user->first_name, $verificationURL));
 
-        $verificationURL = URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(60),
-            [
-                'id' => $user->id,
-                'hash' => sha1($user->email),
-                'token' => $token
-            ]
-        );
+        return response()->json([
+            'message' => 'User Created Successfully!',
+            'user' => $user->makeHidden(['password', 'remember_token']),
+        ], 200);
+    }
 
-            Mail::to($user->email)->send(new VerificationEmail($user->first_name, $verificationURL, $token));
+    public function verify(EmailVerificationRequest $emailVerificationRequest, EmailVerificationService $emailVerificationService){
+        $request = $emailVerificationService->emailVerificationHandler($emailVerificationRequest);
 
+        if(!$request) {
             return response()->json([
-                'message' => 'User Created Successfully!',
-                'user' => $user->makehidden(['password', 'remember_token']),
-                'redirect' => 'email/verify'
-            ], 200);
+                'status' => $request['status'],
+                'message' => $request['message'],
+            ]);
+        } else {
+            return redirect()->route('email-verified')->with('message', 'Email Verified Successfully!');
+        }
     }
 
-    public function verify(Request $request) {
-        $user = User::findOrFail($request->id);
-
-        if (!$request->hasValidSignature()) {
-            abort(403, 'Invalid or expired verification link.');
-        }
-
-        $tokenParts = explode('|', $request->token);
-        if (count($tokenParts) !== 2) {
-            abort(403, 'Invalid token format.');
-        }
-
-        $tokenRecord = PersonalAccessToken::find($tokenParts[0]);
-
-        if (!$tokenRecord || ! hash_equals($tokenRecord->token, hash('sha256', $tokenParts[1]))) {
-            abort(403, 'Invalid or expired token.');
-        }
-
-        if (!Auth::check()) {
-            Auth::login($user);
-        }
-
-        if (!$user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-            $user->is_verified = true;
-            $user->save();
-
-            $tokenRecord->delete();
-        }
-
-        return redirect()->route('email-verified')->with('message', 'Email Verified Successfully!');
-    }
-
-    public function login(LoginRequest $request) {
+    public function login(LoginRequest $request, AuthService $authService, EmailVerificationService $emailVerificationService) {
 
         $validated = $request->validated();
 
-        // Fetches User from DB
-        $user = User::where('email', $validated['email'])->first();
+        $result = $authService->loginHandler($validated, $emailVerificationService);
 
-            // Checks if user exists and if password is correct
-            if(!$user || !Hash::check($validated['password'], $user->password)) {
-                return response()->json(['message' => 'Invalid Credentials'], 401);
+            if($result['status'] == 200) {
+                return response()->json([
+                    'status' => $result['status'],
+                    'message' => $result['message'],
+                    'user' => $result['user'],
+                    'token' => $result['token']
+                ]);
+            } else {
+                return response()->json([
+                    'status' => $result['status'],
+                    'message' => $result['message'],
+                ]);
             }
-
-            // Deletes previous tokens.
-            $user->tokens()->delete();
-
-            $token = $user->createToken('auth_token', ['*'], now()->addMinutes(60))->plainTextToken;
-            $user->last_login_at = now();
-
-            $user->save();
-
-            return response()->json([
-                'message' => 'Login Successful!',
-                'access_token' => $token,
-                'token_type' => 'Bearer'], 200);
     }
 
     public function logout(Request $request) {

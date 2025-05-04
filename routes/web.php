@@ -1,7 +1,13 @@
 <?php
 
+
+// use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
 
 Route::get('/', function () {
     return view('welcome');
@@ -12,6 +18,7 @@ Route::get('/auth/email-verified', function () {
 })->name('email-verified');
 
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])->name('verification.verify');
+
 
 // Route::post('/email/verification-notification', function (Request $request) {
 //     $request->user()->sendEmailVerificationNotification();

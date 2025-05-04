@@ -16,11 +16,10 @@ class VerificationEmail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(private string $name, private string $verificationURL, private string $token)
+    public function __construct(private string $name, private string $verificationURL)
     {
         $this->name = $name;
         $this->verificationURL = $verificationURL;
-        $this->token = $token;
     }
 
     /**
@@ -43,7 +42,6 @@ class VerificationEmail extends Mailable
             with: [
                 'name' => $this->name,
                 'verificationURL' => $this->verificationURL,
-                'token' => $this->token
             ]
         );
     }

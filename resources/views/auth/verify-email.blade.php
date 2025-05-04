@@ -16,7 +16,7 @@
     <p>Hello, <span style="font-weight: bold; color: #4CAF50;">{{ $name }}!</span></p>
     <p>Thank you for signing up! Click on the link below to get verified.</p>
     <div style="text-align: center; margin: 30px 0;">
-        <a href="{{ $verificationURL }}"
+        <a href="{!! $verificationURL !!}"
            style="display: inline-block;
                   background-color: #4CAF50;
                   color: white;
