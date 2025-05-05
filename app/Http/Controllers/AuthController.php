@@ -17,37 +17,18 @@ use App\Mail\VerificationEmail;
 
 class AuthController extends Controller
 {
-    // public function index() {
-
-    // }
-
     /**
      * User Authentication Main Methods
      */
     public function signup(SignupRequest $request, EmailVerificationService $emailVerificationService) {
         $validated = $request->validated();
-
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'date_of_birth' => $validated['date_of_birth'],
-            'phone' => $validated['phone'],
-            'gender' => $validated['gender'],
-            'address' => [
-                'province' => $validated['address']['province'],
-                'municipal' => $validated['address']['municipal'],
-                'barangay' => $validated['address']['barangay'],
-                'block' => $validated['address']['block'],
-            ]
-        ]);
+        $user = User::create($validated);
 
         $verificationURL = $emailVerificationService->generateVerificationURL($user);
         Mail::to($user->email)->send(new VerificationEmail($user->first_name, $verificationURL));
 
         return response()->json([
-            'message' => 'User Created Successfully!',
+            'message' => 'User Created Successfully! Verification email sent.',
             'user' => $user->makeHidden(['password', 'remember_token']),
         ], 200);
     }
@@ -71,19 +52,26 @@ class AuthController extends Controller
 
         $result = $authService->loginHandler($validated, $emailVerificationService);
 
-            if($result['status'] == 200) {
-                return response()->json([
-                    'status' => $result['status'],
-                    'message' => $result['message'],
-                    'user' => $result['user'],
-                    'token' => $result['token']
-                ]);
-            } else {
-                return response()->json([
-                    'status' => $result['status'],
-                    'message' => $result['message'],
-                ]);
-            }
+            // if($result['status'] == 200) {
+            //     return response()->json([
+            //         'status' => $result['status'],
+            //         'message' => $result['message'],
+            //         'user' => $result['user'],
+            //         'token' => $result['token']
+            //     ]);
+            // } else {
+            //     return response()->json([
+            //         'status' => $result['status'],
+            //         'message' => $result['message'],
+            //     ]);
+            // }
+
+            return response()->json([
+                'status' => $result['status'],
+                'message' => $result['message'],
+                'user' => $result['user'] ?? null,
+                'token' => $result['token'] ?? null
+            ]);
     }
 
     public function logout(Request $request) {
